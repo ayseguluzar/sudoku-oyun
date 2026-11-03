@@ -11,21 +11,24 @@ interface ThemeContextValue {
   toggleVibrate: () => void;
 }
 
+const DEFAULT_SETTINGS: AppSettings = {
+  theme: "light",
+  sound: true,
+  vibrate: true,
+};
+
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings>({
-    theme: "light",
-    sound: true,
-    vibrate: true,
-  });
-  const [ready, setReady] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    const loaded = loadSettings();
-    setSettings(loaded);
-    document.documentElement.classList.toggle("dark", loaded.theme === "dark");
-    setReady(true);
+    const id = window.setTimeout(() => {
+      const loaded = loadSettings();
+      setSettings(loaded);
+      document.documentElement.classList.toggle("dark", loaded.theme === "dark");
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   const persist = useCallback((next: AppSettings) => {
@@ -44,10 +47,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }),
     [settings, persist],
   );
-
-  if (!ready) {
-    return <div className="min-h-dvh bg-background" />;
-  }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

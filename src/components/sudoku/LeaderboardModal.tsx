@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Medal, X } from "lucide-react";
 import { formatTime, scoresForDifficulty, type ScoreEntry } from "@/lib/sudoku/storage";
 import type { Difficulty } from "@/lib/sudoku/types";
@@ -20,6 +20,7 @@ interface LeaderboardModalProps {
 
 export function LeaderboardModal({ open, onClose, refreshKey = 0 }: LeaderboardModalProps) {
   const [tab, setTab] = useState<Difficulty>("easy");
+  const [scores, setScores] = useState<ScoreEntry[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -30,10 +31,11 @@ export function LeaderboardModal({ open, onClose, refreshKey = 0 }: LeaderboardM
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const scores = useMemo(() => {
-    void refreshKey;
-    return scoresForDifficulty(tab, 10);
-  }, [tab, refreshKey, open]);
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setTimeout(() => setScores(scoresForDifficulty(tab, 10)), 0);
+    return () => window.clearTimeout(id);
+  }, [open, tab, refreshKey]);
 
   if (!open) return null;
 

@@ -113,9 +113,11 @@ function carvePuzzle(solution: Grid, difficulty: Difficulty, rng: Rng): Grid {
   );
 
   let clues = SIZE * SIZE;
+  const started = Date.now();
+  const budgetMs = difficulty === "hard" ? 1200 : difficulty === "medium" ? 800 : 500;
 
   for (const { row, col } of positions) {
-    if (clues <= targetClues) break;
+    if (clues <= targetClues || Date.now() - started > budgetMs) break;
 
     const backup = puzzle[row][col];
     puzzle[row][col] = 0;

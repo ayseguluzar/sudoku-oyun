@@ -39,6 +39,8 @@ export function SudokuGame() {
   const [notesMode, setNotesMode] = useState(false);
   const [won, setWon] = useState(false);
   const [lost, setLost] = useState(false);
+  const [showWinModal, setShowWinModal] = useState(false);
+  const [showLostModal, setShowLostModal] = useState(false);
   const [mistakes, setMistakes] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [bestSeconds, setBestSeconds] = useState<number | null>(null);
@@ -49,18 +51,81 @@ export function SudokuGame() {
   const [scoreTick, setScoreTick] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [isPending, startTransition] = useTransition();
+
   const timerActive = useRef(false);
   const settingsRef = useRef(settings);
+  const secondsRef = useRef(0);
+  const modeRef = useRef<GameMode>("normal");
+  const mistakesRef = useRef(0);
+  const finishedRef = useRef(false);
+  const applyPuzzleRef = useRef<(
+    next: Puzzle,
+    opts?: {
+      mode?: GameMode;
+      board?: Board;
+      mistakes?: number;
+      seconds?: number;
+      notesMode?: boolean;
+    },
+  ) => void>(() => {});
 
   useEffect(() => {
     settingsRef.current = settings;
   }, [settings]);
+
+  useEffect(() => {
+    secondsRef.current = seconds;
+  }, [seconds]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
+  useEffect(() => {
+    mistakesRef.current = mistakes;
+  }, [mistakes]);
 
   const locked = won || lost;
 
   const refreshBest = useCallback((level: Difficulty) => {
     const best = loadBestTimes()[level];
     setBestSeconds(best ?? null);
+  }, []);
+
+  const registerWin = useCallback(
+    (solvedPuzzle: Puzzle) => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      timerActive.current = false;
+      clearProgress();
+
+      const elapsed = secondsRef.current;
+      const saved = saveBestTime(solvedPuzzle.difficulty, elapsed);
+      setIsNewBest(saved === elapsed);
+      refreshBest(solvedPuzzle.difficulty);
+      addScore({
+        difficulty: solvedPuzzle.difficulty,
+        seconds: elapsed,
+        mistakes: mistakesRef.current,
+        mode: modeRef.current,
+        date: todayKey(),
+      });
+      setScoreTick((t) => t + 1);
+      playWin(settingsRef.current);
+      setWon(true);
+      setShowWinModal(true);
+    },
+    [refreshBest],
+  );
+
+  const registerLoss = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    timerActive.current = false;
+    clearProgress();
+    playLose(settingsRef.current);
+    setLost(true);
+    setShowLostModal(true);
   }, []);
 
   const applyPuzzle = useCallback(
@@ -76,6 +141,7 @@ export function SudokuGame() {
     ) => {
       const nextMode = opts?.mode ?? (next.dailyKey ? "daily" : "normal");
       const cloned = cloneBoard(opts?.board ?? next.board);
+      finishedRef.current = false;
       setPuzzle(next);
       setBoard(cloned);
       setInitialBoard(cloneBoard(next.board));
@@ -85,6 +151,8 @@ export function SudokuGame() {
       setNotesMode(opts?.notesMode ?? false);
       setWon(false);
       setLost(false);
+      setShowWinModal(false);
+      setShowLostModal(false);
       setMistakes(opts?.mistakes ?? 0);
       setSeconds(opts?.seconds ?? 0);
       setIsNewBest(false);
@@ -97,22 +165,45 @@ export function SudokuGame() {
   );
 
   useEffect(() => {
-    startTransition(() => {
-      const saved = loadProgress();
-      if (saved) {
-        applyPuzzle(saved.puzzle, {
-          mode: saved.mode,
-          board: saved.board,
-          mistakes: saved.mistakes,
-          seconds: saved.seconds,
-          notesMode: saved.notesMode,
-        });
-      } else {
-        applyPuzzle(createPuzzle("easy"));
-      }
-      setHydrated(true);
-    });
+    applyPuzzleRef.current = applyPuzzle;
   }, [applyPuzzle]);
+
+  useEffect(() => {
+    let alive = true;
+    const saved = loadProgress();
+    const timer = window.setTimeout(() => {
+      if (!alive) return;
+      try {
+        const validSaved =
+          saved &&
+          Array.isArray(saved.puzzle?.board) &&
+          Array.isArray(saved.puzzle?.solution) &&
+          Array.isArray(saved.board);
+
+        if (validSaved) {
+          applyPuzzleRef.current(saved.puzzle, {
+            mode: saved.mode,
+            board: saved.board,
+            mistakes: saved.mistakes,
+            seconds: saved.seconds,
+            notesMode: saved.notesMode,
+          });
+        } else {
+          if (saved) clearProgress();
+          applyPuzzleRef.current(createPuzzle("easy"));
+        }
+      } catch {
+        clearProgress();
+        applyPuzzleRef.current(createPuzzle("easy"));
+      }
+      if (alive) setHydrated(true);
+    }, 0);
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!hydrated || !board || !puzzle || !initialBoard || locked) return;
@@ -152,17 +243,20 @@ export function SudokuGame() {
   );
 
   const handleDifficultyChange = (level: Difficulty) => {
-    setDifficulty(level);
     startNewGame(level, mode);
   };
 
   const handleRestart = () => {
     if (!initialBoard) return;
     clearProgress();
+    finishedRef.current = false;
     setBoard(restartBoard(initialBoard));
     setSelected(null);
+    setNotesMode(false);
     setWon(false);
     setLost(false);
+    setShowWinModal(false);
+    setShowLostModal(false);
     setMistakes(0);
     setSeconds(0);
     setIsNewBest(false);
@@ -178,37 +272,15 @@ export function SudokuGame() {
   }, []);
 
   const commitBoard = useCallback(
-    (next: Board, from: Board) => {
+    (next: Board, from: Board, currentPuzzle: Puzzle) => {
       pushHistory(from);
       setBoard(next);
+      if (isSolved(next, currentPuzzle.solution)) {
+        registerWin(currentPuzzle);
+      }
     },
-    [pushHistory],
+    [pushHistory, registerWin],
   );
-
-  useEffect(() => {
-    if (!board || !puzzle || won || lost) return;
-    if (!isSolved(board, puzzle.solution)) return;
-
-    timerActive.current = false;
-    clearProgress();
-    const saved = saveBestTime(puzzle.difficulty, seconds);
-    setIsNewBest(saved === seconds);
-    refreshBest(puzzle.difficulty);
-    addScore({
-      difficulty: puzzle.difficulty,
-      seconds,
-      mistakes,
-      mode,
-      date: todayKey(),
-    });
-    setScoreTick((t) => t + 1);
-    playWin(settingsRef.current);
-    setWon(true);
-  }, [board, puzzle, won, lost, seconds, mistakes, mode, refreshBest]);
-
-  useEffect(() => {
-    if (lost) playLose(settingsRef.current);
-  }, [lost]);
 
   const placeValue = useCallback(
     (num: number | null) => {
@@ -246,7 +318,7 @@ export function SudokuGame() {
         }
       }
 
-      commitBoard(next, board);
+      commitBoard(next, board, puzzle);
 
       if (feedback === "correct") playCorrect(settingsRef.current);
       if (feedback === "wrong") playWrong(settingsRef.current);
@@ -254,16 +326,15 @@ export function SudokuGame() {
       if (mistakeAdded) {
         setMistakes((m) => {
           const nextMistakes = m + 1;
+          mistakesRef.current = nextMistakes;
           if (nextMistakes >= MAX_MISTAKES) {
-            timerActive.current = false;
-            clearProgress();
-            setLost(true);
+            registerLoss();
           }
           return nextMistakes;
         });
       }
     },
-    [board, selected, puzzle, locked, notesMode, commitBoard],
+    [board, selected, puzzle, locked, notesMode, commitBoard, registerLoss],
   );
 
   const handleUndo = useCallback(() => {
@@ -275,12 +346,15 @@ export function SudokuGame() {
   }, [board, past, locked]);
 
   const handleRedo = useCallback(() => {
-    if (!board || future.length === 0 || locked) return;
+    if (!board || !puzzle || future.length === 0 || locked) return;
     const next = future[0];
     setFuture((f) => f.slice(1));
     setPast((p) => [...p, cloneBoard(board)]);
     setBoard(cloneBoard(next));
-  }, [board, future, locked]);
+    if (isSolved(next, puzzle.solution)) {
+      registerWin(puzzle);
+    }
+  }, [board, future, locked, puzzle, registerWin]);
 
   const handleHint = useCallback(() => {
     if (!board || !puzzle || locked) return;
@@ -290,15 +364,15 @@ export function SudokuGame() {
     const next = cloneBoard(board);
     next[cell.row][cell.col].value = puzzle.solution[cell.row][cell.col];
     next[cell.row][cell.col].notes = [];
-    commitBoard(next, board);
+    commitBoard(next, board, puzzle);
     setSelected(cell);
     playCorrect(settingsRef.current);
   }, [board, puzzle, locked, selected, commitBoard]);
 
   const handleAutoNotes = useCallback(() => {
-    if (!board || locked) return;
-    commitBoard(fillAutoNotes(board), board);
-  }, [board, locked, commitBoard]);
+    if (!board || !puzzle || locked) return;
+    commitBoard(fillAutoNotes(board), board, puzzle);
+  }, [board, puzzle, locked, commitBoard]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -446,22 +520,21 @@ export function SudokuGame() {
       </main>
 
       <WinModal
-        open={won}
+        open={showWinModal}
         difficulty={puzzle?.difficulty ?? difficulty}
         seconds={seconds}
         isNewBest={isNewBest}
         onNewGame={() => startNewGame(difficulty, mode)}
-        onClose={() => setWon(false)}
+        onClose={() => setShowWinModal(false)}
       />
 
       <GameOverModal
-        open={lost}
+        open={showLostModal}
         onNewGame={() => startNewGame(difficulty, mode)}
         onRestart={() => {
           handleRestart();
-          setLost(false);
         }}
-        onClose={() => setLost(false)}
+        onClose={() => setShowLostModal(false)}
       />
 
       <LeaderboardModal open={scoresOpen} onClose={() => setScoresOpen(false)} refreshKey={scoreTick} />
