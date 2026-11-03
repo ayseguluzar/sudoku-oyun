@@ -63,10 +63,16 @@ function generateCompleteGrid(rng: Rng): Grid {
   return grid;
 }
 
-function countSolutions(grid: Grid, limit = 2): number {
+function countSolutions(grid: Grid, limit = 2, deadline = Infinity): number {
   let count = 0;
+  let timedOut = false;
 
   const solve = (): boolean => {
+    if (Date.now() > deadline) {
+      timedOut = true;
+      return true;
+    }
+
     for (let row = 0; row < SIZE; row++) {
       for (let col = 0; col < SIZE; col++) {
         if (grid[row][col] !== 0) continue;
@@ -89,11 +95,14 @@ function countSolutions(grid: Grid, limit = 2): number {
   };
 
   solve();
-  return count;
+  return timedOut ? -1 : count;
 }
 
-function hasUniqueSolution(grid: Grid): boolean {
-  return countSolutions(cloneGrid(grid), 2) === 1;
+function hasUniqueSolution(grid: Grid, deadline: number): boolean {
+  const count = countSolutions(cloneGrid(grid), 2, deadline);
+  // Zaman aşımında ipucunu koru (güvenli taraf)
+  if (count < 0) return false;
+  return count === 1;
 }
 
 function clueTarget(difficulty: Difficulty, rng: Rng): number {
@@ -114,15 +123,16 @@ function carvePuzzle(solution: Grid, difficulty: Difficulty, rng: Rng): Grid {
 
   let clues = SIZE * SIZE;
   const started = Date.now();
-  const budgetMs = difficulty === "hard" ? 1200 : difficulty === "medium" ? 800 : 500;
+  const budgetMs = difficulty === "hard" ? 900 : difficulty === "medium" ? 500 : 250;
 
   for (const { row, col } of positions) {
-    if (clues <= targetClues || Date.now() - started > budgetMs) break;
+    const now = Date.now();
+    if (clues <= targetClues || now - started > budgetMs) break;
 
     const backup = puzzle[row][col];
     puzzle[row][col] = 0;
 
-    if (hasUniqueSolution(puzzle)) {
+    if (hasUniqueSolution(puzzle, started + budgetMs)) {
       clues -= 1;
     } else {
       puzzle[row][col] = backup;

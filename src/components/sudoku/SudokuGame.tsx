@@ -5,6 +5,7 @@ import { useAppSettings } from "@/components/ThemeProvider";
 import { ActionBar } from "./ActionBar";
 import { GameControls } from "./GameControls";
 import { GameOverModal } from "./GameOverModal";
+import { InstallBanner } from "./InstallBanner";
 import { LeaderboardModal } from "./LeaderboardModal";
 import { Numpad } from "./Numpad";
 import { StatusBar, MAX_MISTAKES } from "./StatusBar";
@@ -19,6 +20,8 @@ import {
   clearProgress,
   loadBestTimes,
   loadProgress,
+  loadStreak,
+  recordDailyWin,
   saveBestTime,
   saveProgress,
   todayKey,
@@ -49,6 +52,7 @@ export function SudokuGame() {
   const [future, setFuture] = useState<Board[]>([]);
   const [scoresOpen, setScoresOpen] = useState(false);
   const [scoreTick, setScoreTick] = useState(0);
+  const [streak, setStreak] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -58,16 +62,8 @@ export function SudokuGame() {
   const modeRef = useRef<GameMode>("normal");
   const mistakesRef = useRef(0);
   const finishedRef = useRef(false);
-  const applyPuzzleRef = useRef<(
-    next: Puzzle,
-    opts?: {
-      mode?: GameMode;
-      board?: Board;
-      mistakes?: number;
-      seconds?: number;
-      notesMode?: boolean;
-    },
-  ) => void>(() => {});
+  const boardReadyRef = useRef(false);
+  const [bootFailed, setBootFailed] = useState(false);
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -110,6 +106,10 @@ export function SudokuGame() {
         mode: modeRef.current,
         date: todayKey(),
       });
+      if (modeRef.current === "daily") {
+        const nextStreak = recordDailyWin(todayKey());
+        setStreak(nextStreak.current);
+      }
       setScoreTick((t) => t + 1);
       playWin(settingsRef.current);
       setWon(true);
@@ -142,6 +142,8 @@ export function SudokuGame() {
       const nextMode = opts?.mode ?? (next.dailyKey ? "daily" : "normal");
       const cloned = cloneBoard(opts?.board ?? next.board);
       finishedRef.current = false;
+      boardReadyRef.current = true;
+      setBootFailed(false);
       setPuzzle(next);
       setBoard(cloned);
       setInitialBoard(cloneBoard(next.board));
@@ -164,44 +166,75 @@ export function SudokuGame() {
     [refreshBest],
   );
 
-  useEffect(() => {
-    applyPuzzleRef.current = applyPuzzle;
-  }, [applyPuzzle]);
-
-  useEffect(() => {
-    let alive = true;
-    const saved = loadProgress();
-    const timer = window.setTimeout(() => {
-      if (!alive) return;
+  const bootGame = useCallback(
+    (forceNew = false) => {
       try {
-        const validSaved =
-          saved &&
-          Array.isArray(saved.puzzle?.board) &&
-          Array.isArray(saved.puzzle?.solution) &&
-          Array.isArray(saved.board);
-
-        if (validSaved) {
-          applyPuzzleRef.current(saved.puzzle, {
-            mode: saved.mode,
-            board: saved.board,
-            mistakes: saved.mistakes,
-            seconds: saved.seconds,
-            notesMode: saved.notesMode,
-          });
-        } else {
-          if (saved) clearProgress();
-          applyPuzzleRef.current(createPuzzle("easy"));
+        if (!forceNew) {
+          const saved = loadProgress();
+          if (saved) {
+            applyPuzzle(saved.puzzle, {
+              mode: saved.mode,
+              board: saved.board,
+              mistakes: saved.mistakes,
+              seconds: saved.seconds,
+              notesMode: saved.notesMode,
+            });
+            setHydrated(true);
+            return;
+          }
         }
+
+        clearProgress();
+        applyPuzzle(createPuzzle("easy"));
+        setHydrated(true);
       } catch {
         clearProgress();
-        applyPuzzleRef.current(createPuzzle("easy"));
+        try {
+          applyPuzzle(createPuzzle("easy"));
+          setHydrated(true);
+        } catch {
+          setBootFailed(true);
+          setHydrated(true);
+        }
       }
-      if (alive) setHydrated(true);
+    },
+    [applyPuzzle],
+  );
+
+  const bootGameRef = useRef(bootGame);
+
+  useEffect(() => {
+    bootGameRef.current = bootGame;
+  }, [bootGame]);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setStreak(loadStreak().current), 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    boardReadyRef.current = false;
+
+    const bootTimer = window.setTimeout(() => {
+      if (!cancelled) bootGameRef.current(false);
     }, 0);
 
+    const watchdog = window.setTimeout(() => {
+      if (cancelled || boardReadyRef.current) return;
+      clearProgress();
+      try {
+        bootGameRef.current(true);
+      } catch {
+        setBootFailed(true);
+        setHydrated(true);
+      }
+    }, 2000);
+
     return () => {
-      alive = false;
-      window.clearTimeout(timer);
+      cancelled = true;
+      window.clearTimeout(bootTimer);
+      window.clearTimeout(watchdog);
     };
   }, []);
 
@@ -445,84 +478,102 @@ export function SudokuGame() {
   const controlsDisabled = !board || isPending || locked;
 
   return (
-    <div className="sudoku-shell relative min-h-dvh overflow-hidden">
+    <div className="sudoku-shell relative overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top, var(--shell-a) 0%, transparent 55%), radial-gradient(ellipse at bottom right, var(--shell-b) 0%, transparent 50%), linear-gradient(180deg, var(--shell-c) 0%, var(--shell-d) 100%)",
+            "radial-gradient(ellipse at top, var(--shell-a) 0%, transparent 52%), radial-gradient(ellipse at bottom right, var(--shell-b) 0%, transparent 48%), linear-gradient(180deg, var(--shell-c) 0%, var(--shell-d) 100%)",
         }}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.35] dark:opacity-[0.2] [background-image:linear-gradient(rgba(15,118,110,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(15,118,110,0.06)_1px,transparent_1px)] [background-size:24px_24px]"
-      />
 
-      <main className="relative mx-auto flex w-full max-w-lg flex-col gap-4 px-4 py-6 sm:gap-5 sm:py-10">
-        <header className="text-center">
-          <p className="font-display text-3xl font-semibold tracking-tight text-teal-800 dark:text-teal-300 sm:text-4xl">
-            Sudoku
-          </p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {mode === "daily" ? `Günlük bulmaca · ${todayKey()}` : "Hücre seç · 1–9 · N not · H ipucu"}
-          </p>
+      <div className="relative mx-auto flex h-full w-full max-w-lg flex-col">
+        <header className="app-pad-x app-pad-top shrink-0 space-y-2 pb-1.5 pt-1.5 sm:space-y-3 sm:pt-6">
+          <TopBar
+            isDaily={mode === "daily"}
+            onDaily={() => startNewGame(difficulty, mode === "daily" ? "normal" : "daily")}
+            onOpenScores={() => setScoresOpen(true)}
+          />
+          <GameControls
+            difficulty={difficulty}
+            generating={isPending || !board}
+            onDifficultyChange={handleDifficultyChange}
+            onNewGame={() => startNewGame(difficulty, mode)}
+            onRestart={handleRestart}
+          />
+          <StatusBar seconds={seconds} bestSeconds={bestSeconds} mistakes={mistakes} streak={streak} />
+          {mode === "daily" && (
+            <p className="px-0.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700/80 dark:text-teal-300/80">
+              Günlük · {todayKey()}
+            </p>
+          )}
         </header>
 
-        <TopBar
-          isDaily={mode === "daily"}
-          onDaily={() => startNewGame(difficulty, mode === "daily" ? "normal" : "daily")}
-          onOpenScores={() => setScoresOpen(true)}
-        />
+        <section className="app-pad-x flex min-h-0 flex-1 items-center justify-center py-1 sm:py-4">
+          {board ? (
+            <SudokuBoard
+              board={board}
+              selected={selected}
+              onSelect={(row, col) => {
+                if (!locked) setSelected({ row, col });
+              }}
+            />
+          ) : (
+            <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-[1.15rem] bg-white/70 ring-1 ring-slate-200 dark:bg-slate-800/70 dark:ring-slate-700">
+              {!bootFailed && (
+                <span className="size-8 animate-spin rounded-full border-[3px] border-teal-200 border-t-teal-600 dark:border-teal-900 dark:border-t-teal-300" />
+              )}
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                {bootFailed ? "Bulmaca yüklenemedi" : "Bulmaca hazırlanıyor…"}
+              </p>
+              {bootFailed && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBootFailed(false);
+                    bootGame(true);
+                  }}
+                  className="rounded-2xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white active:scale-95"
+                >
+                  Tekrar dene
+                </button>
+              )}
+            </div>
+          )}
+        </section>
 
-        <GameControls
-          difficulty={difficulty}
-          generating={isPending || !board}
-          onDifficultyChange={handleDifficultyChange}
-          onNewGame={() => startNewGame(difficulty, mode)}
-          onRestart={handleRestart}
-        />
-
-        <StatusBar seconds={seconds} bestSeconds={bestSeconds} mistakes={mistakes} />
-
-        {board ? (
-          <SudokuBoard
-            board={board}
-            selected={selected}
-            onSelect={(row, col) => {
-              if (!locked) setSelected({ row, col });
-            }}
+        <footer className="app-pad-x app-pad-bottom app-dock shrink-0 space-y-1.5 border-t px-3 pt-2 sm:space-y-2 sm:rounded-t-3xl sm:border sm:px-4 sm:pb-5 sm:pt-3">
+          <ActionBar
+            disabled={controlsDisabled}
+            canUndo={past.length > 0}
+            canRedo={future.length > 0}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onHint={handleHint}
+            onAutoNotes={handleAutoNotes}
           />
-        ) : (
-          <div className="mx-auto flex aspect-square w-full max-w-[min(100%,28rem)] items-center justify-center rounded-xl bg-white/70 ring-1 ring-slate-200 dark:bg-slate-800/70 dark:ring-slate-700">
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Bulmaca hazırlanıyor…</p>
-          </div>
-        )}
+          <Numpad
+            notesMode={notesMode}
+            remaining={remaining}
+            disabled={controlsDisabled}
+            onNumber={(n) => placeValue(n)}
+            onErase={() => placeValue(null)}
+            onToggleNotes={() => setNotesMode((v) => !v)}
+          />
+        </footer>
+      </div>
 
-        <ActionBar
-          disabled={controlsDisabled}
-          canUndo={past.length > 0}
-          canRedo={future.length > 0}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          onHint={handleHint}
-          onAutoNotes={handleAutoNotes}
-        />
-
-        <Numpad
-          notesMode={notesMode}
-          remaining={remaining}
-          disabled={controlsDisabled}
-          onNumber={(n) => placeValue(n)}
-          onErase={() => placeValue(null)}
-          onToggleNotes={() => setNotesMode((v) => !v)}
-        />
-      </main>
+      <InstallBanner />
 
       <WinModal
+        key={scoreTick}
         open={showWinModal}
         difficulty={puzzle?.difficulty ?? difficulty}
         seconds={seconds}
+        mistakes={mistakes}
+        mode={mode}
+        streak={streak}
         isNewBest={isNewBest}
         onNewGame={() => startNewGame(difficulty, mode)}
         onClose={() => setShowWinModal(false)}

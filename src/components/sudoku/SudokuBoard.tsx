@@ -18,11 +18,11 @@ export function SudokuBoard({ board, selected, onSelect }: SudokuBoardProps) {
 
   return (
     <div
-      className="mx-auto w-full max-w-[min(100%,28rem)] overflow-hidden rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-300/80 dark:shadow-black/40 dark:ring-slate-600"
+      className="mx-auto aspect-square w-full max-h-full overflow-hidden rounded-[1.15rem] shadow-[0_12px_40px_-18px_rgba(15,23,42,0.45)] ring-1 ring-slate-300/70 dark:shadow-black/50 dark:ring-slate-600"
       role="grid"
       aria-label="Sudoku tahtası"
     >
-      <div className="grid grid-cols-9">
+      <div className="grid size-full grid-cols-9">
         {board.map((row, r) =>
           row.map((cell, c) => {
             const isSelected = selected?.row === r && selected?.col === c;

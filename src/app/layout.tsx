@@ -17,30 +17,42 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "Sudoku Oyunu",
-  description: "Modern, mobil uyumlu Sudoku — kolay, orta, zor, günlük bulmaca.",
+  applicationName: "Sudoku",
+  title: {
+    default: "Sudoku",
+    template: "%s · Sudoku",
+  },
+  description: "Telefon için tasarlanmış modern Sudoku. Kolay, orta, zor ve günlük bulmaca.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
+    statusBarStyle: "black-translucent",
     title: "Sudoku",
   },
-  icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#0d9488" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f766e" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
   ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="tr" className={`${nunito.variable} ${fredoka.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="min-h-full font-sans">
+      <body className="min-h-dvh overflow-hidden font-sans touch-manipulation">
         <ThemeProvider>
           <RegisterSW />
           {children}

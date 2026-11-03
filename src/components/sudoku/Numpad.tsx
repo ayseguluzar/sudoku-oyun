@@ -21,8 +21,8 @@ export function Numpad({
   disabled,
 }: NumpadProps) {
   return (
-    <div className="mx-auto w-full max-w-[min(100%,28rem)] space-y-3">
-      <div className="grid grid-cols-9 gap-1.5 sm:gap-2">
+    <div className="space-y-2.5">
+      <div className="grid grid-cols-9 gap-1.5">
         {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => {
           const left = remaining[n - 1] ?? 0;
           const depleted = left === 0;
@@ -33,16 +33,15 @@ export function Numpad({
               disabled={disabled || (!notesMode && depleted)}
               onClick={() => onNumber(n)}
               className={cn(
-                "relative flex aspect-square flex-col items-center justify-center rounded-xl",
-                "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200",
-                "transition hover:bg-teal-50 hover:text-teal-800 hover:ring-teal-300",
-                "active:scale-95 disabled:cursor-not-allowed disabled:opacity-35",
-                "dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700 dark:hover:bg-slate-700",
+                "relative flex min-h-12 flex-col items-center justify-center rounded-2xl",
+                "bg-slate-100/90 text-slate-800 dark:bg-slate-900/80 dark:text-slate-100",
+                "transition active:scale-95 active:bg-teal-100 dark:active:bg-teal-900/60",
+                "disabled:cursor-not-allowed disabled:opacity-30",
                 notesMode && "text-slate-500 dark:text-slate-400",
               )}
               aria-label={`${n}, kalan ${left}`}
             >
-              <span className="text-lg font-semibold leading-none sm:text-xl">{n}</span>
+              <span className="font-display text-xl font-semibold leading-none">{n}</span>
               <span
                 className={cn(
                   "mt-0.5 text-[10px] font-semibold tabular-nums",
@@ -62,12 +61,11 @@ export function Numpad({
           disabled={disabled}
           onClick={onToggleNotes}
           className={cn(
-            "flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold",
-            "shadow-sm ring-1 transition active:scale-[0.98]",
-            "disabled:cursor-not-allowed disabled:opacity-40",
+            "flex min-h-12 items-center justify-center gap-2 rounded-2xl text-sm font-semibold",
+            "transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40",
             notesMode
-              ? "bg-teal-600 text-white ring-teal-600"
-              : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700",
+              ? "bg-teal-600 text-white shadow-sm shadow-teal-700/20"
+              : "bg-slate-100/90 text-slate-700 dark:bg-slate-900/80 dark:text-slate-200",
           )}
           aria-pressed={notesMode}
         >
@@ -79,11 +77,10 @@ export function Numpad({
           disabled={disabled}
           onClick={onErase}
           className={cn(
-            "flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold",
-            "bg-white text-slate-700 shadow-sm ring-1 ring-slate-200",
-            "transition hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-200",
-            "active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40",
-            "dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-rose-950",
+            "flex min-h-12 items-center justify-center gap-2 rounded-2xl text-sm font-semibold",
+            "bg-slate-100/90 text-slate-700 transition active:scale-[0.98] active:bg-rose-50 active:text-rose-700",
+            "disabled:cursor-not-allowed disabled:opacity-40",
+            "dark:bg-slate-900/80 dark:text-slate-200 dark:active:bg-rose-950 dark:active:text-rose-300",
           )}
         >
           <Delete className="size-4" />

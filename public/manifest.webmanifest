@@ -1,13 +1,31 @@
 {
-  "name": "Sudoku Oyunu",
+  "id": "/",
+  "name": "Sudoku",
   "short_name": "Sudoku",
-  "description": "Modern, mobil uyumlu Sudoku — kolay, orta, zor ve günlük bulmaca",
+  "description": "Telefon için tasarlanmış modern Sudoku — kolay, orta, zor ve günlük bulmaca",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "display_override": ["standalone", "fullscreen"],
+  "orientation": "portrait",
+  "background_color": "#0d9488",
   "theme_color": "#0d9488",
   "lang": "tr",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
   "icons": [
+    {
+      "src": "/icon",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon.svg",
       "sizes": "any",

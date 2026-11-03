@@ -40,15 +40,30 @@ export function LeaderboardModal({ open, onClose, refreshKey = 0 }: LeaderboardM
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <button type="button" className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]" aria-label="Kapat" onClick={onClose} />
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-950/50 backdrop-blur-[3px]"
+        aria-label="Kapat"
+        onClick={onClose}
+      />
+      <div className="relative flex max-h-[88dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-slate-200 bg-white shadow-2xl sm:rounded-[1.75rem] dark:border-slate-700 dark:bg-slate-900">
+        <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-slate-200 sm:hidden dark:bg-slate-700" aria-hidden />
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
           <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
             <Medal className="size-5 text-teal-600" />
             <h2 className="font-display text-lg font-semibold">Puan tablosu</h2>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Kapat">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl p-2 text-slate-500 transition active:bg-slate-100 dark:active:bg-slate-800"
+            aria-label="Kapat"
+          >
             <X className="size-5" />
           </button>
         </div>
@@ -60,10 +75,10 @@ export function LeaderboardModal({ open, onClose, refreshKey = 0 }: LeaderboardM
               type="button"
               onClick={() => setTab(id)}
               className={cn(
-                "rounded-lg px-2 py-2 text-sm font-semibold transition",
+                "min-h-11 rounded-2xl px-2 text-sm font-semibold transition active:scale-[0.98]",
                 tab === id
                   ? "bg-teal-600 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300",
+                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
               )}
             >
               {label}
@@ -71,7 +86,7 @@ export function LeaderboardModal({ open, onClose, refreshKey = 0 }: LeaderboardM
           ))}
         </div>
 
-        <div className="max-h-80 overflow-y-auto px-4 pb-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           {scores.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-500">Henüz skor yok. Bir oyun bitir!</p>
           ) : (
@@ -89,13 +104,15 @@ export function LeaderboardModal({ open, onClose, refreshKey = 0 }: LeaderboardM
 
 function ScoreRow({ rank, entry }: { rank: number; entry: ScoreEntry }) {
   return (
-    <li className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-800/80">
+    <li className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3 dark:bg-slate-800/80">
       <div className="flex items-center gap-3">
-        <span className="flex size-7 items-center justify-center rounded-full bg-white text-xs font-bold text-teal-700 shadow-sm dark:bg-slate-700 dark:text-teal-300">
+        <span className="flex size-8 items-center justify-center rounded-full bg-white text-xs font-bold text-teal-700 shadow-sm dark:bg-slate-700 dark:text-teal-300">
           {rank}
         </span>
         <div>
-          <p className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100">{formatTime(entry.seconds)}</p>
+          <p className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+            {formatTime(entry.seconds)}
+          </p>
           <p className="text-[11px] text-slate-500">
             {entry.date} · {entry.mistakes} hata{entry.mode === "daily" ? " · günlük" : ""}
           </p>
