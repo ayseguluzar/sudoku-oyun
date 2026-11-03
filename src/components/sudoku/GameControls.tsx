@@ -28,7 +28,7 @@ export function GameControls({
   return (
     <div className="mx-auto flex w-full max-w-[min(100%,28rem)] flex-col gap-3">
       <div
-        className="grid grid-cols-3 gap-1 rounded-xl bg-slate-200/70 p-1"
+        className="grid grid-cols-3 gap-1 rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800"
         role="radiogroup"
         aria-label="Zorluk"
       >
@@ -44,8 +44,8 @@ export function GameControls({
               "rounded-lg px-2 py-2 text-sm font-semibold transition",
               "disabled:cursor-wait disabled:opacity-60",
               difficulty === id
-                ? "bg-white text-teal-800 shadow-sm"
-                : "text-slate-600 hover:text-slate-900",
+                ? "bg-white text-teal-800 shadow-sm dark:bg-slate-700 dark:text-teal-200"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100",
             )}
           >
             {label}
@@ -77,6 +77,7 @@ export function GameControls({
             "bg-white text-slate-700 shadow-sm ring-1 ring-slate-200",
             "transition hover:bg-slate-50 active:scale-[0.98]",
             "disabled:cursor-not-allowed disabled:opacity-40",
+            "dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700",
           )}
         >
           <RefreshCw className="size-4" />

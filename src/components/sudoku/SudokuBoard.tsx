@@ -18,7 +18,7 @@ export function SudokuBoard({ board, selected, onSelect }: SudokuBoardProps) {
 
   return (
     <div
-      className="mx-auto w-full max-w-[min(100%,28rem)] overflow-hidden rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-300/80"
+      className="mx-auto w-full max-w-[min(100%,28rem)] overflow-hidden rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-300/80 dark:shadow-black/40 dark:ring-slate-600"
       role="grid"
       aria-label="Sudoku tahtası"
     >

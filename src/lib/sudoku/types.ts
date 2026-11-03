@@ -16,6 +16,7 @@ export interface Puzzle {
   board: Board;
   solution: Grid;
   difficulty: Difficulty;
+  dailyKey?: string;
 }
 
 export const DIFFICULTY_CLUES: Record<Difficulty, { min: number; max: number }> = {

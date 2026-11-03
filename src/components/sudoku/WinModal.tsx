@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Trophy, X } from "lucide-react";
+import { formatTime } from "@/lib/sudoku/storage";
 import { cn } from "@/lib/utils";
 import type { Difficulty } from "@/lib/sudoku/types";
 
@@ -14,11 +15,20 @@ const LABELS: Record<Difficulty, string> = {
 interface WinModalProps {
   open: boolean;
   difficulty: Difficulty;
+  seconds: number;
+  isNewBest: boolean;
   onNewGame: () => void;
   onClose: () => void;
 }
 
-export function WinModal({ open, difficulty, onNewGame, onClose }: WinModalProps) {
+export function WinModal({
+  open,
+  difficulty,
+  seconds,
+  isNewBest,
+  onNewGame,
+  onClose,
+}: WinModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -65,8 +75,13 @@ export function WinModal({ open, difficulty, onNewGame, onClose }: WinModalProps
             Tebrikler!
           </h2>
           <p className="mt-2 text-center text-sm text-teal-50">
-            {LABELS[difficulty]} bulmacayı başarıyla tamamladın.
+            {LABELS[difficulty]} bulmacayı {formatTime(seconds)} sürede tamamladın.
           </p>
+          {isNewBest && (
+            <p className="mt-2 text-center text-sm font-semibold text-amber-100">
+              Yeni rekor!
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-2 p-5">
           <button

@@ -4,12 +4,15 @@ Modern, mobil uyumlu bir Sudoku oyunu.
 
 ## Özellikler
 
-- 9×9 tahta, 3×3 alt ızgaralar
 - Kolay / Orta / Zor seviyeler
-- Dokunmatik tuş takımı ve klavye desteği
-- Canlı kural kontrolü (satır, sütun, kutu)
-- Not (kalem) modu
-- Yeni oyun, baştan başlat, kazanma ekranı
+- Süre, rekor, 3 haklı hata sistemi
+- İpucu, geri/ileri, otomatik notlar, kalan sayı sayaçları
+- Açık / koyu tema
+- Ses ve titreşim geri bildirimi
+- Günlük bulmaca (her gün aynı puzzle)
+- Yarım kalan oyunu tarayıcıda saklama
+- Yerel puan tablosu
+- PWA (telefona eklenebilir)
 
 ## Çalıştırma
 

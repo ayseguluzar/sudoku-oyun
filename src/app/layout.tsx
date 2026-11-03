@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
+import { RegisterSW } from "@/components/RegisterSW";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -16,17 +18,34 @@ const fredoka = Fredoka({
 
 export const metadata: Metadata = {
   title: "Sudoku Oyunu",
-  description: "Modern, mobil uyumlu Sudoku — kolay, orta ve zor seviyeler.",
+  description: "Modern, mobil uyumlu Sudoku — kolay, orta, zor, günlük bulmaca.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Sudoku",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0d9488",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0d9488" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f766e" },
+  ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="tr" className={`${nunito.variable} ${fredoka.variable} h-full antialiased`}>
-      <body className="min-h-full font-sans">{children}</body>
+    <html lang="tr" className={`${nunito.variable} ${fredoka.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full font-sans">
+        <ThemeProvider>
+          <RegisterSW />
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

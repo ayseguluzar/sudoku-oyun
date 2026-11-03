@@ -37,28 +37,28 @@ export function SudokuCell({
       aria-pressed={selected}
       className={cn(
         "relative flex aspect-square items-center justify-center",
-        "border border-slate-300/80 text-[clamp(1rem,3.8vw,1.35rem)] font-semibold outline-none",
+        "border border-slate-300/80 text-[clamp(1rem,3.8vw,1.35rem)] font-semibold outline-none dark:border-slate-600",
         "transition-colors duration-100",
         "focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset",
-        alternateBox ? "bg-slate-100/90" : "bg-white",
-        related && !selected && "bg-teal-50/90",
-        sameNumber && !selected && !conflict && "bg-teal-100/95 text-teal-800",
-        selected && "z-10 bg-teal-200/95 ring-2 ring-inset ring-teal-500",
-        conflict && "bg-rose-100 text-rose-600",
-        conflict && selected && "bg-rose-200 ring-rose-500",
-        cell.given ? "text-slate-900" : "text-teal-700",
-        thickRight && "border-r-2 border-r-slate-500",
-        thickBottom && "border-b-2 border-b-slate-500",
-        col === 0 && "border-l-2 border-l-slate-500",
-        row === 0 && "border-t-2 border-t-slate-500",
-        col === 8 && "border-r-2 border-r-slate-500",
-        row === 8 && "border-b-2 border-b-slate-500",
+        alternateBox ? "bg-slate-100/90 dark:bg-slate-800/90" : "bg-white dark:bg-slate-900",
+        related && !selected && "bg-teal-50/90 dark:bg-teal-950/60",
+        sameNumber && !selected && !conflict && "bg-teal-100/95 text-teal-800 dark:bg-teal-900/70 dark:text-teal-200",
+        selected && "z-10 bg-teal-200/95 ring-2 ring-inset ring-teal-500 dark:bg-teal-800/80",
+        conflict && "bg-rose-100 text-rose-600 dark:bg-rose-950/70 dark:text-rose-300",
+        conflict && selected && "bg-rose-200 ring-rose-500 dark:bg-rose-900/80",
+        cell.given ? "text-slate-900 dark:text-slate-100" : "text-teal-700 dark:text-teal-300",
+        thickRight && "border-r-2 border-r-slate-500 dark:border-r-slate-400",
+        thickBottom && "border-b-2 border-b-slate-500 dark:border-b-slate-400",
+        col === 0 && "border-l-2 border-l-slate-500 dark:border-l-slate-400",
+        row === 0 && "border-t-2 border-t-slate-500 dark:border-t-slate-400",
+        col === 8 && "border-r-2 border-r-slate-500 dark:border-r-slate-400",
+        row === 8 && "border-b-2 border-b-slate-500 dark:border-b-slate-400",
       )}
     >
       {cell.value ? (
         <span className={cn(conflict && "font-bold")}>{cell.value}</span>
       ) : cell.notes.length > 0 ? (
-        <div className="grid size-full grid-cols-3 grid-rows-3 p-[8%] text-[clamp(0.45rem,1.6vw,0.65rem)] font-medium leading-none text-slate-500">
+        <div className="grid size-full grid-cols-3 grid-rows-3 p-[8%] text-[clamp(0.45rem,1.6vw,0.65rem)] font-medium leading-none text-slate-500 dark:text-slate-400">
           {Array.from({ length: 9 }, (_, i) => {
             const n = i + 1;
             return (
